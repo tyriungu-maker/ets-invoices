@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document Generator | Execute Tech Solutions</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --red: #E02020;
+      --dark: #0A0A0F;
+      --darker: #050508;
+      --card-bg: #111118;
+      --border: rgba(255,255,255,0.08);
+      --text: #F0F0F0;
+      --muted: #888;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; }
+
+    /* ── LOGIN PAGE ── */
+    #login-screen {
+      position: fixed; inset: 0; background: var(--darker);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem;
+    }
+    #login-screen.hidden { display: none; }
+    #app-root.hidden { display: none; }
+
+    .login-card {
+      background: var(--card-bg); border: 0.5px solid var(--border);
+      border-radius: 16px; padding: 2.5rem 2rem;
+      width: 100%; max-width: 380px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    }
+    .login-logo { text-align: center; margin-bottom: 2rem; }
+    .login-logo-text { font-size: 22px; font-weight: 700; color: var(--text); }
+    .login-logo-text span { color: var(--red); }
+    .login-logo-sub { font-size: 9px; letter-spacing: 3px; color: var(--muted); display: block; margin-top: 2px; }
+    .login-divider {
+      width: 40px; height: 2px; background: var(--red);
+      margin: 1rem auto; border-radius: 2px;
+    }
+    .login-title { font-size: 16px; font-weight: 600; text-align: center; margin-bottom: 0.25rem; }
+    .login-sub { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 1.75rem; }
+
+    .login-field { margin-bottom: 14px; }
+    .login-field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+    .login-field .input-wrap { position: relative; }
+    .login-field .input-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--muted); pointer-events: none; }
+    .login-field input {
+      width: 100%; background: rgba(255,255,255,0.04); border: 0.5px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: inherit;
+      font-size: 13px; padding: 11px 12px 11px 38px; transition: border-color 0.2s; outline: none;
+    }
+    .login-field input:focus { border-color: rgba(224,32,32,0.5); }
+    .login-field .toggle-pw {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px;
+      padding: 0; line-height: 1;
+    }
+    .login-field .toggle-pw:hover { color: var(--text); }
+
+    .login-error {
+      background: rgba(224,32,32,0.1); border: 0.5px solid rgba(224,32,32,0.3);
+      color: #ff8080; border-radius: 8px; padding: 10px 14px;
+      font-size: 12px; margin-bottom: 14px; display: none;
+      align-items: center; gap: 8px;
+    }
+    .login-error.show { display: flex; }
+
+    .btn-login {
+      width: 100%; background: var(--red); color: white; border: none;
+      border-radius: 8px; padding: 13px; font-size: 14px; font-family: inherit;
+      font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;
+    }
+    .btn-login:hover { opacity: 0.85; }
+    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .login-footer { text-align: center; margin-top: 1.5rem; font-size: 11px; color: var(--muted); }
+
+    /* logout button in nav */
+    .nav-logout {
+      display: flex; align-items: center; gap: 6px; color: var(--muted);
+      background: none; border: 0.5px solid var(--border); border-radius: 7px;
+      padding: 7px 14px; font-size: 12px; font-family: inherit;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .nav-logout:hover { color: var(--red); border-color: rgba(224,32,32,0.4); }
+
+    /* ── NAV ── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2.5rem; height: 64px;
+      background: rgba(10,10,15,0.98);
+      border-bottom: 0.5px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo-text { font-size: 17px; font-weight: 700; color: var(--text); }
+    .nav-logo-text span { color: var(--red); }
+    .nav-logo-sub { font-size: 8px; letter-spacing: 3px; color: var(--muted); display: block; }
+    .nav-back { display: flex; align-items: center; gap: 6px; color: var(--muted); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+    .nav-back:hover { color: var(--text); }
+
+    /* ── LAYOUT ── */
+    .app { display: grid; grid-template-columns: 380px 1fr; min-height: calc(100vh - 64px); }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      background: var(--card-bg); border-right: 0.5px solid var(--border);
+      padding: 1.5rem; overflow-y: auto; max-height: calc(100vh - 64px);
+      position: sticky; top: 64px;
+    }
+    .sidebar-section { margin-bottom: 1.5rem; }
+    .sidebar-section-title {
+      font-size: 10px; font-weight: 600; letter-spacing: 2px;
+      color: var(--muted); text-transform: uppercase; margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem; border-bottom: 0.5px solid var(--border);
+    }
+
+    /* Doc type tabs */
+    .doc-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 1.5rem; }
+    .doc-tab {
+      padding: 10px 6px; border-radius: 8px; border: 0.5px solid var(--border);
+      background: transparent; color: var(--muted); cursor: pointer;
+      font-size: 12px; font-family: inherit; font-weight: 500;
+      text-align: center; transition: all 0.2s;
+    }
+    .doc-tab:hover { border-color: rgba(224,32,32,0.4); color: var(--text); }
+    .doc-tab.active { background: rgba(224,32,32,0.12); border-color: rgba(224,32,32,0.5); color: var(--red); }
+    .doc-tab i { display: block; font-size: 18px; margin-bottom: 4px; }
+
+    /* Form elements */
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+    input, select, textarea {
+      width: 100%; background: rgba(255,255,255,0.04); border: 0.5px solid var(--border);
+      border-radius: 6px; color: var(--text); font-family: inherit;
+      font-size: 13px; padding: 9px 12px; transition: border-color 0.2s;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: rgba(224,32,32,0.5); }
+    select option { background: #1a1a22; }
+    textarea { resize: vertical; min-height: 60px; }
+    .form-row { margin-bottom: 10px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* Items table builder */
+    .items-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .btn-sm {
+      background: rgba(224,32,32,0.12); border: 0.5px solid rgba(224,32,32,0.3);
+      color: var(--red); border-radius: 6px; padding: 6px 12px;
+      font-size: 12px; font-family: inherit; cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 5px; font-weight: 500;
+    }
+    .btn-sm:hover { background: rgba(224,32,32,0.2); }
+    .item-row {
+      background: rgba(255,255,255,0.03); border: 0.5px solid var(--border);
+      border-radius: 8px; padding: 10px; margin-bottom: 8px; position: relative;
+    }
+    .item-row input, .item-row select { font-size: 12px; padding: 7px 10px; }
+    .item-desc { margin-bottom: 6px; }
+    .item-nums { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 6px; align-items: end; }
+    .item-total-label { font-size: 11px; color: var(--muted); text-align: right; }
+    .item-total-val { font-size: 13px; font-weight: 600; color: var(--text); text-align: right; }
+    .btn-remove {
+      background: rgba(224,32,32,0.08); border: 0.5px solid rgba(224,32,32,0.2);
+      color: #ff6060; border-radius: 5px; padding: 7px 8px;
+      cursor: pointer; font-size: 13px; transition: all 0.2s; line-height: 1;
+    }
+    .btn-remove:hover { background: rgba(224,32,32,0.2); }
+
+    /* Saved services dropdown */
+    .saved-services {
+      background: rgba(255,255,255,0.03); border: 0.5px solid var(--border);
+      border-radius: 8px; padding: 10px; margin-bottom: 10px;
+    }
+    .saved-services-title { font-size: 11px; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+    .services-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .service-chip {
+      background: rgba(255,255,255,0.04); border: 0.5px solid var(--border);
+      border-radius: 20px; padding: 4px 10px; font-size: 11px; color: var(--muted);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .service-chip:hover { border-color: rgba(224,32,32,0.4); color: var(--text); background: rgba(224,32,32,0.08); }
+
+    /* Action buttons */
+    .btn-primary {
+      width: 100%; background: var(--red); color: white; border: none;
+      border-radius: 8px; padding: 12px; font-size: 14px; font-family: inherit;
+      font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-outline {
+      width: 100%; background: transparent; color: var(--text);
+      border: 0.5px solid var(--border); border-radius: 8px; padding: 11px;
+      font-size: 13px; font-family: inherit; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.3); }
+
+    /* ── PREVIEW PANE ── */
+    .preview-pane {
+      padding: 2rem; background: #1a1a22; overflow-y: auto;
+    }
+    .preview-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px;
+    }
+    .preview-title { font-size: 14px; font-weight: 600; color: var(--muted); }
+    .toolbar-actions { display: flex; gap: 8px; }
+    .toolbar-btn {
+      background: rgba(255,255,255,0.06); border: 0.5px solid var(--border);
+      color: var(--text); border-radius: 7px; padding: 8px 16px;
+      font-size: 13px; font-family: inherit; cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .toolbar-btn:hover { background: rgba(255,255,255,0.1); }
+    .toolbar-btn.red { background: rgba(224,32,32,0.12); border-color: rgba(224,32,32,0.3); color: var(--red); }
+    .toolbar-btn.red:hover { background: rgba(224,32,32,0.2); }
+
+    /* ── DOCUMENT ── */
+    #doc-preview {
+      background: white; color: #1a1a1a;
+      max-width: 800px; margin: 0 auto;
+      border-radius: 4px; overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      font-family: 'Inter', -apple-system, sans-serif;
+    }
+    .doc-header {
+      background: #0A0A0F; padding: 32px 40px; display: flex;
+      justify-content: space-between; align-items: flex-start;
+    }
+    .doc-company-name { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .doc-company-name span { color: #E02020; }
+    .doc-company-sub { font-size: 8px; letter-spacing: 3px; color: #888; margin-top: 2px; }
+    .doc-company-info { font-size: 11px; color: #aaa; margin-top: 12px; line-height: 1.8; }
+    .doc-type-badge {
+      text-align: right;
+    }
+    .doc-type-label {
+      font-size: 28px; font-weight: 800; color: #E02020; letter-spacing: -1px; text-transform: uppercase;
+    }
+    .doc-number { font-size: 12px; color: #888; margin-top: 4px; }
+    .doc-date { font-size: 12px; color: #888; margin-top: 2px; }
+
+    .doc-body { padding: 32px 40px; }
+
+    .doc-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+    .doc-meta-box {}
+    .doc-meta-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #aaa; text-transform: uppercase; margin-bottom: 6px; }
+    .doc-meta-name { font-size: 15px; font-weight: 700; color: #1a1a1a; }
+    .doc-meta-detail { font-size: 12px; color: #666; line-height: 1.8; margin-top: 3px; }
+
+    .doc-validity { background: #f8f8f8; border-left: 3px solid #E02020; padding: 10px 16px; border-radius: 0 6px 6px 0; margin-bottom: 24px; font-size: 12px; color: #666; }
+    .doc-validity strong { color: #1a1a1a; }
+
+    /* Items table */
+    .doc-items { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .doc-items thead tr { background: #0A0A0F; }
+    .doc-items thead th { padding: 10px 14px; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: #aaa; text-align: left; text-transform: uppercase; }
+    .doc-items thead th:last-child { text-align: right; }
+    .doc-items thead th:nth-child(2), .doc-items thead th:nth-child(3) { text-align: right; }
+    .doc-items tbody tr { border-bottom: 1px solid #f0f0f0; }
+    .doc-items tbody tr:last-child { border-bottom: none; }
+    .doc-items tbody td { padding: 12px 14px; font-size: 13px; color: #1a1a1a; vertical-align: top; }
+    .doc-items tbody td:nth-child(2), .doc-items tbody td:nth-child(3) { text-align: right; white-space: nowrap; }
+    .doc-items tbody td:last-child { text-align: right; font-weight: 600; white-space: nowrap; }
+    .doc-item-name { font-weight: 600; }
+    .doc-item-desc { font-size: 11px; color: #888; margin-top: 2px; }
+
+    /* Totals */
+    .doc-totals { display: flex; justify-content: flex-end; margin-bottom: 28px; }
+    .doc-totals-table { width: 260px; }
+    .doc-totals-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; color: #555; border-bottom: 1px solid #f0f0f0; }
+    .doc-totals-row:last-child { border-bottom: none; }
+    .doc-totals-row.total {
+      font-size: 16px; font-weight: 700; color: #1a1a1a;
+      border-top: 2px solid #E02020; padding-top: 10px; margin-top: 4px;
+    }
+    .doc-totals-row.total span:last-child { color: #E02020; }
+
+    /* Payment / Notes */
+    .doc-footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px; }
+    .doc-footer-box {}
+    .doc-footer-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #aaa; text-transform: uppercase; margin-bottom: 8px; }
+    .doc-footer-content { font-size: 12px; color: #555; line-height: 1.8; }
+    .doc-footer-content strong { color: #1a1a1a; }
+
+    /* ── ETS RUBBER STAMP ── */
+    .doc-stamp {
+      text-align: center; margin-top: 10px;
+    }
+    .ets-stamp {
+      display: inline-block;
+      border: 3px solid rgba(30, 60, 180, 0.55);
+      border-radius: 10px;
+      padding: 8px 14px 10px;
+      transform: rotate(-8deg);
+      opacity: 0.45;
+      font-family: 'Courier New', Courier, monospace;
+      line-height: 1.35;
+      text-align: center;
+      background: transparent;
+      filter: blur(0.3px);
+      mix-blend-mode: multiply;
+    }
+    .ets-stamp .s-name {
+      font-size: 10.5px; font-weight: 900; color: #1a3ab5;
+      letter-spacing: 1px; text-transform: uppercase; display: block;
+    }
+    .ets-stamp .s-tel {
+      font-size: 9.5px; font-weight: 700; color: #1a3ab5;
+      letter-spacing: 0.5px; display: block;
+    }
+    .ets-stamp .s-date {
+      font-size: 11px; font-weight: 900; color: #b01818;
+      letter-spacing: 2px; display: block; margin: 4px 0;
+    }
+    .ets-stamp .s-po {
+      font-size: 9.5px; font-weight: 700; color: #1a3ab5;
+      letter-spacing: 0.5px; display: block;
+    }
+    .ets-stamp .s-city {
+      font-size: 10px; font-weight: 900; color: #1a3ab5;
+      letter-spacing: 1.5px; text-transform: uppercase; display: block;
+    }
+
+
+      background: #f8f8f8; padding: 14px 40px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-top: 1px solid #eee;
+    }
+    .doc-bottom-tagline { font-size: 11px; color: #aaa; font-style: italic; }
+    .doc-bottom-contact { font-size: 11px; color: #888; }
+
+    /* ── PRINT STYLES ── */
+    @media print {
+      body { background: white; }
+      nav, .sidebar, .preview-toolbar, .toolbar-actions { display: none !important; }
+      .app { display: block; }
+      .preview-pane { padding: 0; background: white; }
+      #doc-preview { box-shadow: none; max-width: 100%; border-radius: 0; }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: static; max-height: none; border-right: none; border-bottom: 0.5px solid var(--border); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+    /* ── RECORDS PANEL ── */
+    .records-panel {
+      position: fixed; top: 64px; right: 0; bottom: 0; width: 360px;
+      background: var(--card-bg); border-left: 0.5px solid var(--border);
+      z-index: 90; transform: translateX(100%); transition: transform 0.3s ease;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .records-panel.open { transform: translateX(0); }
+    .records-header {
+      padding: 16px; border-bottom: 0.5px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .records-title { font-size: 14px; font-weight: 600; }
+    .records-close {
+      background: rgba(255,255,255,0.06); border: 0.5px solid var(--border);
+      color: var(--muted); border-radius: 6px; padding: 5px 8px;
+      cursor: pointer; font-size: 14px; transition: all 0.2s;
+    }
+    .records-close:hover { color: var(--text); }
+    .records-filters {
+      padding: 10px 16px; border-bottom: 0.5px solid var(--border);
+      display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap;
+    }
+    .filter-chip {
+      padding: 5px 12px; border-radius: 20px; border: 0.5px solid var(--border);
+      background: transparent; color: var(--muted); font-size: 11px;
+      font-family: inherit; cursor: pointer; transition: all 0.2s; font-weight: 500;
+    }
+    .filter-chip.active { background: rgba(224,32,32,0.12); border-color: rgba(224,32,32,0.4); color: var(--red); }
+    .records-search { padding: 10px 16px; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+    .records-search input { font-size: 12px; }
+    .records-list { flex: 1; overflow-y: auto; padding: 10px; }
+    .record-card {
+      background: rgba(255,255,255,0.03); border: 0.5px solid var(--border);
+      border-radius: 10px; padding: 12px; margin-bottom: 8px; transition: all 0.2s;
+    }
+    .record-card:hover { border-color: rgba(224,32,32,0.3); background: rgba(224,32,32,0.04); }
+    .record-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+    .record-card-num { font-size: 13px; font-weight: 700; color: var(--text); }
+    .record-type-badge { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; }
+    .badge-invoice { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .badge-quotation { background: rgba(234,179,8,0.15); color: #fbbf24; }
+    .badge-receipt { background: rgba(22,163,74,0.15); color: #4ade80; }
+    .record-client { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .record-card-bottom { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .record-amount { font-size: 14px; font-weight: 700; color: var(--red); }
+    .record-date { font-size: 11px; color: var(--muted); }
+    .record-actions { display: flex; gap: 5px; }
+    .record-btn {
+      flex: 1; padding: 7px; border-radius: 6px; font-size: 11px; font-family: inherit;
+      cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px; font-weight: 500;
+    }
+    .record-btn.load { background: rgba(224,32,32,0.1); border: 0.5px solid rgba(224,32,32,0.25); color: var(--red); }
+    .record-btn.load:hover { background: rgba(224,32,32,0.2); }
+    .record-btn.del { background: rgba(255,255,255,0.04); border: 0.5px solid var(--border); color: var(--muted); }
+    .record-btn.del:hover { background: rgba(224,32,32,0.08); color: #ff6060; border-color: rgba(224,32,32,0.3); }
+    .records-empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .records-empty i { font-size: 36px; display: block; margin-bottom: 12px; opacity: 0.4; }
+    .records-empty p { font-size: 13px; }
+    .records-stats {
+      padding: 12px 16px; border-top: 0.5px solid var(--border);
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; flex-shrink: 0;
+    }
+    .stat-box { text-align: center; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 8px; }
+    .stat-val { font-size: 16px; font-weight: 700; }
+    .stat-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+    .records-toggle {
+      position: fixed; bottom: 24px; right: 24px; z-index: 91;
+      background: var(--card-bg); border: 0.5px solid var(--border);
+      color: var(--text); border-radius: 12px; padding: 12px 18px;
+      font-size: 13px; font-family: inherit; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+    .records-toggle:hover { border-color: rgba(224,32,32,0.4); color: var(--red); }
+    .records-toggle .badge { background: var(--red); color: white; border-radius: 20px; padding: 1px 7px; font-size: 11px; font-weight: 700; }
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1a1a22; border: 0.5px solid var(--border); color: var(--text);
+      padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      opacity: 0; transition: all 0.3s; z-index: 200; white-space: nowrap;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast i { color: #4ade80; }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-text">Execute<span>Tech</span></div>
+      <span class="login-logo-sub">SOLUTIONS</span>
+      <div class="login-divider"></div>
+    </div>
+    <div class="login-title">Document Portal</div>
+    <div class="login-sub">Sign in to access invoices, quotes &amp; receipts</div>
+
+    <div class="login-error" id="login-error">
+      <i class="ti ti-alert-circle"></i>
+      <span id="login-error-msg">Invalid username or password.</span>
+    </div>
+
+    <div class="login-field">
+      <label>Username</label>
+      <div class="input-wrap">
+        <i class="ti ti-user"></i>
+        <input type="text" id="login-username" placeholder="Enter username" autocomplete="username" />
+      </div>
+    </div>
+
+    <div class="login-field">
+      <label>Password</label>
+      <div class="input-wrap">
+        <i class="ti ti-lock"></i>
+        <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" />
+        <button class="toggle-pw" type="button" onclick="togglePassword()" id="pw-toggle-btn" title="Show/hide password">
+          <i class="ti ti-eye" id="pw-toggle-icon"></i>
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-login" onclick="attemptLogin()" id="login-btn">
+      <i class="ti ti-login"></i> Sign In
+    </button>
+
+    <div class="login-footer">Execute Tech Solutions &mdash; Internal Use Only</div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app-root" class="hidden">
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div>
+      <div class="nav-logo-text">Execute<span>Tech</span></div>
+      <span class="nav-logo-sub">SOLUTIONS</span>
+    </div>
+  </a>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="https://executetechsolutions.co.ke" class="nav-back"><i class="ti ti-arrow-left"></i> Back to Website</a>
+    <button class="nav-logout" onclick="logout()" title="Sign out">
+      <i class="ti ti-logout"></i> Sign Out
+    </button>
+  </div>
+</nav>
+
+<div class="app">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+
+    <!-- Doc Type -->
+    <div class="doc-tabs">
+      <button class="doc-tab active" onclick="setDocType('invoice')" id="tab-invoice">
+        <i class="ti ti-file-invoice"></i> Invoice
+      </button>
+      <button class="doc-tab" onclick="setDocType('quotation')" id="tab-quotation">
+        <i class="ti ti-file-description"></i> Quote
+      </button>
+      <button class="doc-tab" onclick="setDocType('receipt')" id="tab-receipt">
+        <i class="ti ti-receipt"></i> Receipt
+      </button>
+    </div>
+
+    <!-- Doc Details -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Document Details</div>
+      <div class="form-row">
+        <label>Document Number</label>
+        <input type="text" id="doc-number" placeholder="e.g. INV-2026-001" oninput="updatePreview()" />
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Date</label>
+          <input type="date" id="doc-date" oninput="updatePreview()" />
+        </div>
+        <div class="form-row" id="due-date-wrap">
+          <label id="due-date-label">Due Date</label>
+          <input type="date" id="doc-due-date" oninput="updatePreview()" />
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Currency</label>
+        <select id="doc-currency" onchange="updatePreview()">
+          <option value="KES">KES — Kenyan Shilling</option>
+          <option value="USD">USD — US Dollar</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Client Details -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Client / Bill To</div>
+      <div class="form-row">
+        <label>Client Name / Company</label>
+        <input type="text" id="client-name" placeholder="e.g. Safaricom PLC" oninput="updatePreview()" />
+      </div>
+      <div class="form-row">
+        <label>Email</label>
+        <input type="email" id="client-email" placeholder="client@company.com" oninput="updatePreview()" />
+      </div>
+      <div class="form-row">
+        <label>Phone</label>
+        <input type="tel" id="client-phone" placeholder="+254 7XX XXX XXX" oninput="updatePreview()" />
+      </div>
+      <div class="form-row">
+        <label>Address</label>
+        <textarea id="client-address" rows="2" placeholder="P.O Box, City, Country" oninput="updatePreview()"></textarea>
+      </div>
+    </div>
+
+    <!-- Items -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Items / Services</div>
+
+      <!-- Quick-add from saved services -->
+      <div class="saved-services">
+        <div class="saved-services-title"><i class="ti ti-bookmark" style="font-size:11px;"></i> Quick-add from our services</div>
+        <div class="services-chips" id="services-chips"></div>
+      </div>
+
+      <div id="items-list"></div>
+      <button class="btn-sm" onclick="addItem()" style="width:100%;justify-content:center;margin-top:4px;">
+        <i class="ti ti-plus"></i> Add Item Manually
+      </button>
+    </div>
+
+    <!-- VAT -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Tax & Discount</div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>VAT / Tax (%)</label>
+          <input type="number" id="vat-rate" value="16" min="0" max="100" oninput="updatePreview()" />
+        </div>
+        <div class="form-row">
+          <label>Discount (%)</label>
+          <input type="number" id="discount-rate" value="0" min="0" max="100" oninput="updatePreview()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes / Payment -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Payment & Notes</div>
+      <div class="form-row">
+        <label>Payment Method</label>
+        <select id="payment-method" onchange="updatePreview()">
+          <option value="M-Pesa">M-Pesa</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="Cash">Cash</option>
+          <option value="Cheque">Cheque</option>
+          <option value="Card">Card</option>
+        </select>
+      </div>
+      <div class="form-row" id="mpesa-wrap">
+        <label>M-Pesa / Till / Account No.</label>
+        <input type="text" id="payment-ref" placeholder="e.g. 0726179409" oninput="updatePreview()" />
+      </div>
+      <div class="form-row">
+        <label>Notes / Terms</label>
+        <textarea id="doc-notes" rows="3" placeholder="e.g. Payment due within 30 days..." oninput="updatePreview()"></textarea>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="sidebar-section">
+      <button class="btn-primary" onclick="saveDocument()" id="save-btn">
+        <i class="ti ti-device-floppy"></i> Save Document
+      </button>
+      <button class="btn-outline" onclick="downloadPDF()">
+        <i class="ti ti-download"></i> Download PDF
+      </button>
+      <button class="btn-outline" onclick="window.print()">
+        <i class="ti ti-printer"></i> Print Document
+      </button>
+      <button class="btn-outline" onclick="resetForm()" style="margin-top:4px;">
+        <i class="ti ti-plus"></i> New Document
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ── PREVIEW ── -->
+  <main class="preview-pane">
+    <div class="preview-toolbar">
+      <div class="preview-title"><i class="ti ti-eye" style="margin-right:6px;"></i>Live Preview</div>
+      <div class="toolbar-actions">
+        <button class="toolbar-btn" onclick="window.print()"><i class="ti ti-printer"></i> Print</button>
+        <button class="toolbar-btn red" onclick="downloadPDF()"><i class="ti ti-download"></i> PDF</button>
+      </div>
+    </div>
+
+    <div id="doc-preview">
+      <!-- Rendered dynamically -->
+    </div>
+  </main>
+
+</div>
+
+<script>
+  // ── STATE ──
+  let docType = 'invoice';
+  let items = [];
+  let itemId = 0;
+
+  const SERVICES = [
+    { name: 'Cloud Computing', price: 25000 },
+    { name: 'Cybersecurity Audit', price: 45000 },
+    { name: 'Software Development', price: 80000 },
+    { name: 'Network Solutions', price: 35000 },
+    { name: 'IT Infrastructure Setup', price: 60000 },
+    { name: 'IT Consulting', price: 15000 },
+    { name: 'Microsoft Dynamics BC', price: 120000 },
+    { name: 'Microsoft 365 Setup', price: 20000 },
+    { name: 'Backup & Disaster Recovery', price: 30000 },
+    { name: 'AI Solutions', price: 95000 },
+    { name: 'Integration Services', price: 55000 },
+    { name: 'ICT & Networking Equipment', price: 40000 },
+    { name: 'Laptop / Desktop Supply', price: 75000 },
+    { name: 'CCTV & Surveillance', price: 50000 },
+    { name: 'IT Training & Support', price: 18000 },
+  ];
+
+  // ── INIT (called by auth after login or on session restore) ──
+  let _appInited = false;
+  function initApp() {
+    if (_appInited) return;
+    _appInited = true;
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('doc-date').value = today;
+    const due = new Date(); due.setDate(due.getDate() + 30);
+    document.getElementById('doc-due-date').value = due.toISOString().split('T')[0];
+    document.getElementById('doc-number').value = autoNumber();
+    buildChips();
+    addItem();
+    updatePreview();
+    updateBadge();
+  }
+
+  function buildChips() {
+    const container = document.getElementById('services-chips');
+    container.innerHTML = SERVICES.map(s =>
+      `<span class="service-chip" onclick="addServiceItem('${s.name}', ${s.price})">${s.name}</span>`
+    ).join('');
+  }
+
+  function addServiceItem(name, price) {
+    const id = ++itemId;
+    items.push({ id, name, desc: '', qty: 1, price });
+    renderItems();
+    updatePreview();
+  }
+
+  function addItem() {
+    const id = ++itemId;
+    items.push({ id, name: '', desc: '', qty: 1, price: 0 });
+    renderItems();
+  }
+
+  function removeItem(id) {
+    items = items.filter(i => i.id !== id);
+    renderItems();
+    updatePreview();
+  }
+
+  function updateItem(id, field, value) {
+    const item = items.find(i => i.id === id);
+    if (item) {
+      item[field] = field === 'qty' || field === 'price' ? parseFloat(value) || 0 : value;
+      updateItemTotal(id);
+      updatePreview();
+    }
+  }
+
+  function updateItemTotal(id) {
+    const item = items.find(i => i.id === id);
+    if (item) {
+      const total = (item.qty || 0) * (item.price || 0);
+      const el = document.getElementById(`item-total-${id}`);
+      if (el) el.textContent = formatMoney(total);
+    }
+  }
+
+  function renderItems() {
+    const container = document.getElementById('items-list');
+    container.innerHTML = items.map(item => `
+      <div class="item-row" id="item-row-${item.id}">
+        <div class="item-desc">
+          <input type="text" placeholder="Item / Service name" value="${item.name}"
+            oninput="updateItem(${item.id}, 'name', this.value)" />
+        </div>
+        <div style="margin-bottom:6px;">
+          <input type="text" placeholder="Description (optional)" value="${item.desc}"
+            oninput="updateItem(${item.id}, 'desc', this.value)" />
+        </div>
+        <div class="item-nums">
+          <div>
+            <label>Qty</label>
+            <input type="number" min="1" value="${item.qty}"
+              oninput="updateItem(${item.id}, 'qty', this.value)" />
+          </div>
+          <div>
+            <label>Unit Price</label>
+            <input type="number" min="0" value="${item.price}"
+              oninput="updateItem(${item.id}, 'price', this.value)" />
+          </div>
+          <div>
+            <div class="item-total-label">Total</div>
+            <div class="item-total-val" id="item-total-${item.id}">${formatMoney(item.qty * item.price)}</div>
+          </div>
+          <button class="btn-remove" onclick="removeItem(${item.id})"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── DOC TYPE ──
+  function setDocType(type) {
+    docType = type;
+    ['invoice','quotation','receipt'].forEach(t => {
+      document.getElementById(`tab-${t}`).classList.toggle('active', t === type);
+    });
+
+    const num = document.getElementById('doc-number');
+    if (!currentEditId) num.value = autoNumber();
+
+    const dueDateWrap = document.getElementById('due-date-wrap');
+    const dueDateLabel = document.getElementById('due-date-label');
+    if (type === 'quotation') { dueDateLabel.textContent = 'Valid Until'; dueDateWrap.style.display = ''; }
+    else if (type === 'invoice') { dueDateLabel.textContent = 'Due Date'; dueDateWrap.style.display = ''; }
+    else { dueDateWrap.style.display = 'none'; }
+
+    updatePreview();
+  }
+
+  // ── CALCULATIONS ──
+  function getSymbol() { return document.getElementById('doc-currency').value === 'KES' ? 'KES ' : '$ '; }
+  function formatMoney(n) { return getSymbol() + (parseFloat(n) || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function calcTotals() {
+    const subtotal = items.reduce((s, i) => s + (i.qty * i.price), 0);
+    const disc = parseFloat(document.getElementById('discount-rate').value) || 0;
+    const vat = parseFloat(document.getElementById('vat-rate').value) || 0;
+    const discAmt = subtotal * (disc / 100);
+    const afterDisc = subtotal - discAmt;
+    const vatAmt = afterDisc * (vat / 100);
+    const total = afterDisc + vatAmt;
+    return { subtotal, discAmt, vatAmt, total, disc, vat };
+  }
+
+  // ── PREVIEW ──
+  function updatePreview() {
+    const t = calcTotals();
+    const currency = document.getElementById('doc-currency').value;
+    const docNum = document.getElementById('doc-number').value || '—';
+    const docDate = fmtDate(document.getElementById('doc-date').value);
+    const docDue = fmtDate(document.getElementById('doc-due-date').value);
+    const clientName = document.getElementById('client-name').value || 'Client Name';
+    const clientEmail = document.getElementById('client-email').value;
+    const clientPhone = document.getElementById('client-phone').value;
+    const clientAddr = document.getElementById('client-address').value;
+    const payMethod = document.getElementById('payment-method').value;
+    const payRef = document.getElementById('payment-ref').value;
+    const notes = document.getElementById('doc-notes').value;
+
+    const typeLabel = docType === 'invoice' ? 'Invoice' : docType === 'quotation' ? 'Quotation' : 'Receipt';
+    const typeColor = '#E02020';
+
+    const itemsHTML = items.length === 0
+      ? `<tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px;font-size:13px;">No items added yet</td></tr>`
+      : items.map(i => `
+        <tr>
+          <td>
+            <div class="doc-item-name">${i.name || 'Unnamed Item'}</div>
+            ${i.desc ? `<div class="doc-item-desc">${i.desc}</div>` : ''}
+          </td>
+          <td>${i.qty}</td>
+          <td>${formatMoney(i.price)}</td>
+          <td>${formatMoney(i.qty * i.price)}</td>
+        </tr>`).join('');
+
+    const discRow = t.disc > 0 ? `<div class="doc-totals-row"><span>Discount (${t.disc}%)</span><span>- ${formatMoney(t.discAmt)}</span></div>` : '';
+    const vatRow = t.vat > 0 ? `<div class="doc-totals-row"><span>VAT (${t.vat}%)</span><span>${formatMoney(t.vatAmt)}</span></div>` : '';
+
+    const dueLine = docType === 'invoice'
+      ? `<div class="doc-validity"><strong>Payment Due:</strong> ${docDue} &nbsp;|&nbsp; <strong>Method:</strong> ${payMethod}${payRef ? ` &nbsp;|&nbsp; <strong>Pay to:</strong> ${payRef}` : ''}</div>`
+      : docType === 'quotation'
+      ? `<div class="doc-validity"><strong>Valid Until:</strong> ${docDue} &nbsp;|&nbsp; <strong>Currency:</strong> ${currency} &nbsp;|&nbsp; Prices subject to change after validity period.</div>`
+      : `<div class="doc-validity" style="border-color:#16a34a;"><strong>Payment Received</strong> &nbsp;|&nbsp; <strong>Method:</strong> ${payMethod}${payRef ? ` &nbsp;|&nbsp; <strong>Ref:</strong> ${payRef}` : ''} &nbsp;|&nbsp; <strong>Date:</strong> ${docDate}</div>`;
+
+    // Build stamp date string from document date (e.g. "20 JUL 2026")
+    const stampDateStr = (() => {
+      const raw = document.getElementById('doc-date').value;
+      if (!raw) return new Date().toLocaleDateString('en-KE', { day:'2-digit', month:'short', year:'numeric' }).toUpperCase();
+      const d = new Date(raw + 'T00:00:00');
+      const day = String(d.getDate()).padStart(2, '0');
+      const mon = d.toLocaleDateString('en-KE', { month: 'short' }).toUpperCase();
+      const yr  = d.getFullYear();
+      return `${day} ${mon} ${yr}`;
+    })();
+
+    const stampHTML = `<div class="doc-stamp">
+      <div class="ets-stamp">
+        <span class="s-name">EXECUTE TECH SOLUTIONS</span>
+        <span class="s-tel">Tel: 0726 179 409</span>
+        <span class="s-date">${stampDateStr}</span>
+        <span class="s-po">P. O. Box 2120 - 00100</span>
+        <span class="s-city">NAIROBI</span>
+      </div>
+    </div>`;
+
+    document.getElementById('doc-preview').innerHTML = `
+      <div class="doc-header">
+        <div>
+          <div class="doc-company-name">Execute<span>Tech</span></div>
+          <div class="doc-company-sub">SOLUTIONS</div>
+          <div class="doc-company-info">
+            Nairobi, Kenya<br>
+            +254 717 680 067 &nbsp;|&nbsp; +254 726 179 409<br>
+            info@executetechsolutions.co.ke<br>
+            www.executetechsolutions.co.ke
+          </div>
+        </div>
+        <div class="doc-type-badge">
+          <div class="doc-type-label">${typeLabel}</div>
+          <div class="doc-number"># ${docNum}</div>
+          <div class="doc-date">Date: ${docDate}</div>
+        </div>
+      </div>
+
+      <div class="doc-body">
+        <div class="doc-meta">
+          <div class="doc-meta-box">
+            <div class="doc-meta-label">${docType === 'receipt' ? 'Received From' : 'Bill To'}</div>
+            <div class="doc-meta-name">${clientName}</div>
+            <div class="doc-meta-detail">
+              ${clientEmail ? clientEmail + '<br>' : ''}
+              ${clientPhone ? clientPhone + '<br>' : ''}
+              ${clientAddr ? clientAddr.replace(/\n/g, '<br>') : ''}
+            </div>
+          </div>
+          <div class="doc-meta-box" style="text-align:right;">
+            <div class="doc-meta-label">Amount ${docType === 'receipt' ? 'Received' : docType === 'quotation' ? 'Estimated' : 'Due'}</div>
+            <div style="font-size:26px;font-weight:800;color:#E02020;letter-spacing:-1px;">${formatMoney(t.total)}</div>
+            <div style="font-size:11px;color:#aaa;margin-top:4px;">${currency}</div>
+            ${stampHTML}
+          </div>
+        </div>
+
+        ${dueLine}
+
+        <table class="doc-items">
+          <thead>
+            <tr>
+              <th style="width:45%">Description</th>
+              <th style="width:10%">Qty</th>
+              <th style="width:20%">Unit Price</th>
+              <th style="width:25%">Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHTML}</tbody>
+        </table>
+
+        <div class="doc-totals">
+          <div class="doc-totals-table">
+            <div class="doc-totals-row"><span>Subtotal</span><span>${formatMoney(t.subtotal)}</span></div>
+            ${discRow}
+            ${vatRow}
+            <div class="doc-totals-row total"><span>TOTAL</span><span>${formatMoney(t.total)}</span></div>
+          </div>
+        </div>
+
+        <div class="doc-footer-grid">
+          <div class="doc-footer-box">
+            <div class="doc-footer-label">Payment Information</div>
+            <div class="doc-footer-content">
+              <strong>Method:</strong> ${payMethod}<br>
+              ${payRef ? `<strong>${payMethod === 'M-Pesa' ? 'Pay to' : 'Account'}:</strong> ${payRef}<br>` : ''}
+              <strong>Reference:</strong> ${docNum}
+            </div>
+          </div>
+          <div class="doc-footer-box">
+            <div class="doc-footer-label">Notes & Terms</div>
+            <div class="doc-footer-content">${notes ? notes.replace(/\n/g,'<br>') : docType === 'quotation' ? 'This quotation is valid for the period stated above. Prices are inclusive of VAT where applicable.' : docType === 'receipt' ? 'Thank you for your payment. This receipt confirms full settlement of the amount stated.' : 'Payment is due by the date above. Late payments may attract a 2% monthly surcharge.'}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="doc-bottom">
+        <div class="doc-bottom-tagline">Transforming businesses through technology</div>
+        <div class="doc-bottom-contact">info@executetechsolutions.co.ke &nbsp;|&nbsp; +254 726 179 409</div>
+      </div>
+    `;
+  }
+
+  function fmtDate(val) {
+    if (!val) return '—';
+    const d = new Date(val + 'T00:00:00');
+    return d.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  // ── PDF DOWNLOAD ──
+  async function downloadPDF() {
+    const btn = document.querySelectorAll('.btn-primary, .toolbar-btn.red');
+    btn.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+
+    const el = document.getElementById('doc-preview');
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pdfW = pdf.internal.pageSize.getWidth();
+    const pdfH = (canvas.height * pdfW) / canvas.width;
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+
+    const docNum = document.getElementById('doc-number').value || 'document';
+    pdf.save(`${docNum}.pdf`);
+
+    btn.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+  }
+
+  // Update payment ref label
+  document.getElementById('payment-method').addEventListener('change', function() {
+    const label = document.querySelector('label[for="payment-ref"]') || document.getElementById('mpesa-wrap').querySelector('label');
+    if (label) label.textContent = this.value === 'M-Pesa' ? 'M-Pesa / Till Number' : this.value === 'Bank Transfer' ? 'Account / Bank Details' : 'Reference';
+  });
+</script>
+
+<!-- ── RECORDS PANEL ── -->
+<div class="records-panel" id="records-panel">
+  <div class="records-header">
+    <div class="records-title"><i class="ti ti-archive" style="margin-right:6px;color:var(--red);"></i>Saved Documents</div>
+    <button class="records-close" onclick="toggleRecords()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="records-filters">
+    <button class="filter-chip active" onclick="setFilter('all')" id="filter-all">All</button>
+    <button class="filter-chip" onclick="setFilter('invoice')" id="filter-invoice">Invoices</button>
+    <button class="filter-chip" onclick="setFilter('quotation')" id="filter-quotation">Quotes</button>
+    <button class="filter-chip" onclick="setFilter('receipt')" id="filter-receipt">Receipts</button>
+  </div>
+  <div class="records-search">
+    <input type="text" id="records-search" placeholder="Search by client, number..." oninput="renderRecords()" />
+  </div>
+  <div class="records-list" id="records-list"></div>
+  <div class="records-stats" id="records-stats"></div>
+</div>
+
+<!-- Records toggle FAB -->
+<button class="records-toggle" onclick="toggleRecords()" id="records-toggle-btn">
+  <i class="ti ti-archive"></i> Records
+  <span class="badge" id="records-badge">0</span>
+</button>
+
+<!-- Toast -->
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<script>
+
+  // ── RECORDS / STORAGE ──
+  let currentFilter = 'all';
+  let currentEditId = null;
+
+  function getRecords() {
+    try { return JSON.parse(localStorage.getItem('ets_documents') || '[]'); } catch(e) { return []; }
+  }
+
+  function saveRecords(records) {
+    localStorage.setItem('ets_documents', JSON.stringify(records));
+  }
+
+  function saveDocument() {
+    const docNum = document.getElementById('doc-number').value.trim();
+    const clientName = document.getElementById('client-name').value.trim();
+    if (!docNum) { showToast('Please enter a document number', 'error'); return; }
+    if (!clientName) { showToast('Please enter a client name', 'error'); return; }
+
+    const t = calcTotals();
+    const record = {
+      id: currentEditId || Date.now().toString(),
+      type: docType,
+      number: docNum,
+      date: document.getElementById('doc-date').value,
+      dueDate: document.getElementById('doc-due-date').value,
+      currency: document.getElementById('doc-currency').value,
+      clientName,
+      clientEmail: document.getElementById('client-email').value,
+      clientPhone: document.getElementById('client-phone').value,
+      clientAddress: document.getElementById('client-address').value,
+      paymentMethod: document.getElementById('payment-method').value,
+      paymentRef: document.getElementById('payment-ref').value,
+      notes: document.getElementById('doc-notes').value,
+      vatRate: document.getElementById('vat-rate').value,
+      discountRate: document.getElementById('discount-rate').value,
+      items: JSON.parse(JSON.stringify(items)),
+      total: t.total,
+      savedAt: new Date().toISOString(),
+    };
+
+    const records = getRecords();
+    const existingIdx = records.findIndex(r => r.id === record.id);
+    if (existingIdx >= 0) {
+      records[existingIdx] = record;
+      showToast('Document updated successfully');
+    } else {
+      records.unshift(record);
+      showToast('Document saved successfully');
+    }
+    saveRecords(records);
+    currentEditId = record.id;
+    updateBadge();
+    renderRecords();
+  }
+
+  function loadRecord(id) {
+    const records = getRecords();
+    const r = records.find(rec => rec.id === id);
+    if (!r) return;
+
+    currentEditId = r.id;
+    setDocType(r.type);
+    document.getElementById('doc-number').value = r.number;
+    document.getElementById('doc-date').value = r.date;
+    document.getElementById('doc-due-date').value = r.dueDate || '';
+    document.getElementById('doc-currency').value = r.currency;
+    document.getElementById('client-name').value = r.clientName;
+    document.getElementById('client-email').value = r.clientEmail || '';
+    document.getElementById('client-phone').value = r.clientPhone || '';
+    document.getElementById('client-address').value = r.clientAddress || '';
+    document.getElementById('payment-method').value = r.paymentMethod;
+    document.getElementById('payment-ref').value = r.paymentRef || '';
+    document.getElementById('doc-notes').value = r.notes || '';
+    document.getElementById('vat-rate').value = r.vatRate;
+    document.getElementById('discount-rate').value = r.discountRate;
+    items = r.items.map((it, i) => ({ ...it, id: ++itemId }));
+    renderItems();
+    updatePreview();
+    toggleRecords();
+    showToast('Document loaded');
+  }
+
+  function deleteRecord(id, e) {
+    e.stopPropagation();
+    if (!confirm('Delete this document? This cannot be undone.')) return;
+    const records = getRecords().filter(r => r.id !== id);
+    saveRecords(records);
+    if (currentEditId === id) { currentEditId = null; }
+    updateBadge();
+    renderRecords();
+    showToast('Document deleted');
+  }
+
+  function setFilter(f) {
+    currentFilter = f;
+    ['all','invoice','quotation','receipt'].forEach(t => {
+      document.getElementById('filter-' + t).classList.toggle('active', t === f);
+    });
+    renderRecords();
+  }
+
+  function renderRecords() {
+    const search = (document.getElementById('records-search').value || '').toLowerCase();
+    let records = getRecords();
+
+    if (currentFilter !== 'all') records = records.filter(r => r.type === currentFilter);
+    if (search) records = records.filter(r =>
+      r.clientName.toLowerCase().includes(search) ||
+      r.number.toLowerCase().includes(search)
+    );
+
+    const container = document.getElementById('records-list');
+    if (records.length === 0) {
+      container.innerHTML = `<div class="records-empty"><i class="ti ti-file-off"></i><p>${search || currentFilter !== 'all' ? 'No documents match your filter.' : 'No saved documents yet.<br>Save your first document to see it here.'}</p></div>`;
+    } else {
+      container.innerHTML = records.map(r => {
+        const sym = r.currency === 'KES' ? 'KES ' : '$ ';
+        const amt = sym + (r.total || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const d = new Date(r.date + 'T00:00:00');
+        const dateStr = d.toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' });
+        const badgeClass = 'badge-' + r.type;
+        const typeLabel = r.type === 'invoice' ? 'Invoice' : r.type === 'quotation' ? 'Quotation' : 'Receipt';
+        const isActive = r.id === currentEditId;
+        return `
+          <div class="record-card" style="${isActive ? 'border-color:rgba(224,32,32,0.4);background:rgba(224,32,32,0.05);' : ''}">
+            <div class="record-card-top">
+              <div class="record-card-num">${r.number}</div>
+              <span class="record-type-badge ${badgeClass}">${typeLabel}</span>
+            </div>
+            <div class="record-client"><i class="ti ti-user" style="font-size:11px;"></i> ${r.clientName}</div>
+            <div class="record-card-bottom">
+              <div class="record-amount">${amt}</div>
+              <div class="record-date">${dateStr}</div>
+            </div>
+            <div class="record-actions">
+              <button class="record-btn load" onclick="loadRecord('${r.id}')"><i class="ti ti-pencil"></i> Load & Edit</button>
+              <button class="record-btn del" onclick="deleteRecord('${r.id}', event)"><i class="ti ti-trash"></i> Delete</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // Stats
+    const all = getRecords();
+    const invCount = all.filter(r => r.type === 'invoice').length;
+    const quoCount = all.filter(r => r.type === 'quotation').length;
+    const recCount = all.filter(r => r.type === 'receipt').length;
+    document.getElementById('records-stats').innerHTML = `
+      <div class="stat-box"><div class="stat-val" style="color:#60a5fa;">${invCount}</div><div class="stat-label">Invoices</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:#fbbf24;">${quoCount}</div><div class="stat-label">Quotes</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:#4ade80;">${recCount}</div><div class="stat-label">Receipts</div></div>
+    `;
+  }
+
+  function updateBadge() {
+    const count = getRecords().length;
+    document.getElementById('records-badge').textContent = count;
+  }
+
+  function toggleRecords() {
+    document.getElementById('records-panel').classList.toggle('open');
+    renderRecords();
+  }
+
+  function resetForm() {
+    currentEditId = null;
+    items = [];
+    itemId = 0;
+    document.getElementById('client-name').value = '';
+    document.getElementById('client-email').value = '';
+    document.getElementById('client-phone').value = '';
+    document.getElementById('client-address').value = '';
+    document.getElementById('payment-ref').value = '';
+    document.getElementById('doc-notes').value = '';
+    document.getElementById('vat-rate').value = '16';
+    document.getElementById('discount-rate').value = '0';
+    const prefix = docType === 'invoice' ? 'INV' : docType === 'quotation' ? 'QUO' : 'REC';
+    const count = getRecords().filter(r => r.type === docType).length + 1;
+    document.getElementById('doc-number').value = `${prefix}-2026-${String(count).padStart(3,'0')}`;
+    addItem();
+    updatePreview();
+    showToast('Ready for new document');
+  }
+
+  function showToast(msg, type) {
+    const toast = document.getElementById('toast');
+    const icon = toast.querySelector('i');
+    document.getElementById('toast-msg').textContent = msg;
+    icon.className = type === 'error' ? 'ti ti-alert-circle' : 'ti ti-check';
+    icon.style.color = type === 'error' ? '#f87171' : '#4ade80';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  // Auto-increment doc number based on saved records
+  function autoNumber() {
+    const prefix = docType === 'invoice' ? 'INV' : docType === 'quotation' ? 'QUO' : 'REC';
+    const count = getRecords().filter(r => r.type === docType).length + 1;
+    return `${prefix}-2026-${String(count).padStart(3,'0')}`;
+  }
+
+</script>
+
+<!-- ── AUTH LOGIC ── -->
+<script>
+  // ── Credentials (change these as needed) ──────────────────────────
+  const USERS = [
+    { username: 'admin',    password: 'Execute@2026' },
+    { username: 'finance',  password: 'Finance@2026' },
+  ];
+  // ──────────────────────────────────────────────────────────────────
+
+  const SESSION_KEY = 'ets_doc_session';
+
+  function checkSession() {
+    const s = sessionStorage.getItem(SESSION_KEY);
+    if (s === 'authenticated') {
+      showApp();
+    }
+    // else login screen is already visible
+  }
+
+  function showApp() {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-root').classList.remove('hidden');
+    // initialise the app once it's visible
+    if (typeof initApp === 'function') initApp();
+  }
+
+  function attemptLogin() {
+    const u = document.getElementById('login-username').value.trim();
+    const p = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    const btn = document.getElementById('login-btn');
+
+    errEl.classList.remove('show');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 0.8s linear infinite;"></i> Signing in…';
+
+    setTimeout(() => {
+      const match = USERS.find(user => user.username === u && user.password === p);
+      if (match) {
+        sessionStorage.setItem(SESSION_KEY, 'authenticated');
+        showApp();
+      } else {
+        document.getElementById('login-error-msg').textContent = 'Invalid username or password.';
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-login"></i> Sign In';
+        document.getElementById('login-password').value = '';
+        document.getElementById('login-password').focus();
+      }
+    }, 600);
+  }
+
+  function logout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    document.getElementById('login-username').value = '';
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-error').classList.remove('show');
+    document.getElementById('app-root').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('login-username').focus();
+  }
+
+  function togglePassword() {
+    const inp = document.getElementById('login-password');
+    const icon = document.getElementById('pw-toggle-icon');
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      icon.className = 'ti ti-eye-off';
+    } else {
+      inp.type = 'password';
+      icon.className = 'ti ti-eye';
+    }
+  }
+
+  // Allow Enter key to submit login
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) {
+      attemptLogin();
+    }
+  });
+
+  // Spinner keyframe
+  const styleEl = document.createElement('style');
+  styleEl.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+  document.head.appendChild(styleEl);
+
+  // Run on load
+  checkSession();
+</script>
+</div><!-- end #app-root -->
+</body>
+</html>
